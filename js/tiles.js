@@ -1,0 +1,125 @@
+// ===========================================
+// Mahjong Tiles Module
+// 牌組管理：洗牌、發牌、補牌
+// ===========================================
+
+const TileType = {
+    WAN: 'wan',    // 萬子
+    TIAO: 'tiao', // 條子
+    TONG: 'tong', // 筒子
+    ZI: 'zi',     // 字牌
+    HUA: 'hua'    // 花牌
+};
+
+const TileValue = {
+    WAN: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    TIAO: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    TONG: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    ZI: ['east', 'south', 'west', 'north', 'zhong', 'fa', 'bai'],
+    HUA: ['spring', 'summer', 'autumn', 'winter', 'plum', 'orchid', 'bamboo', 'chrysanthemum']
+};
+
+const ZI_NAMES = {
+    east: '東', south: '南', west: '西', north: '北',
+    zhong: '中', fa: '發', bai: '白'
+};
+
+const HUA_NAMES = {
+    spring: '春', summer: '夏', autumn: '秋', winter: '冬',
+    plum: '梅', orchid: '蘭', bamboo: '竹', chrysanthemum: '菊'
+};
+
+class Tile {
+    constructor(type, value) {
+        this.type = type;
+        this.value = value;
+    }
+
+    toString() {
+        if (this.type === TileType.WAN || this.type === TileType.TIAO || this.type === TileType.TONG) {
+            return this.value;
+        }
+        if (this.type === TileType.ZI) {
+            return ZI_NAMES[this.value] || this.value;
+        }
+        if (this.type === TileType.HUA) {
+            return HUA_NAMES[this.value] || this.value;
+        }
+        return '?';
+    }
+
+    equals(other) {
+        return this.type === other.type && this.value === other.value;
+    }
+
+    isHonor() {
+        return this.type === TileType.ZI;
+    }
+
+    isFlower() {
+        return this.type === TileType.HUA;
+    }
+}
+
+class TileSet {
+    constructor() {
+        this.tiles = [];
+        this.index = 0;
+        this.createTiles();
+    }
+
+    createTiles() {
+        this.tiles = [];
+        
+        // 萬子、條子、筒子各 9 種 * 4 張 = 108 張
+        [TileType.WAN, TileType.TIAO, TileType.TONG].forEach(type => {
+            for (let v = 1; v <= 9; v++) {
+                for (let i = 0; i < 4; i++) {
+                    this.tiles.push(new Tile(type, v));
+                }
+            }
+        });
+
+        // 字牌 7 種 * 4 張 = 28 張
+        TileValue.ZI.forEach(v => {
+            for (let i = 0; i < 4; i++) {
+                this.tiles.push(new Tile(TileType.ZI, v));
+            }
+        });
+
+        // 花牌 8 張
+        TileValue.HUA.forEach(v => {
+            this.tiles.push(new Tile(TileType.HUA, v));
+        });
+
+        // 總計 144 張
+    }
+
+    shuffle() {
+        for (let i = this.tiles.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [this.tiles[i], this.tiles[j]] = [this.tiles[j], this.tiles[i]];
+        }
+        this.index = 0;
+    }
+
+    draw() {
+        if (this.index >= this.tiles.length) {
+            return null;
+        }
+        return this.tiles[this.index++];
+    }
+
+    remaining() {
+        return this.tiles.length - this.index;
+    }
+
+    reset() {
+        this.createTiles();
+        this.shuffle();
+    }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { Tile, TileSet, TileType, TileValue };
+}
