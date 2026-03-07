@@ -4,11 +4,11 @@
 // ===========================================
 
 const TileType = {
-    WAN: 'wan',    // 萬子
-    TIAO: 'tiao', // 條子
-    TONG: 'tong', // 筒子
-    ZI: 'zi',     // 字牌
-    HUA: 'hua'    // 花牌
+    WAN: 'wan',
+    TIAO: 'tiao',
+    TONG: 'tong',
+    ZI: 'zi',
+    HUA: 'hua'
 };
 
 const TileValue = {
@@ -71,7 +71,6 @@ class TileSet {
     createTiles() {
         this.tiles = [];
         
-        // 萬子、條子、筒子各 9 種 * 4 張 = 108 張
         [TileType.WAN, TileType.TIAO, TileType.TONG].forEach(type => {
             for (let v = 1; v <= 9; v++) {
                 for (let i = 0; i < 4; i++) {
@@ -80,19 +79,15 @@ class TileSet {
             }
         });
 
-        // 字牌 7 種 * 4 張 = 28 張
         TileValue.ZI.forEach(v => {
             for (let i = 0; i < 4; i++) {
                 this.tiles.push(new Tile(TileType.ZI, v));
             }
         });
 
-        // 花牌 8 張
         TileValue.HUA.forEach(v => {
             this.tiles.push(new Tile(TileType.HUA, v));
         });
-
-        // 總計 144 張
     }
 
     shuffle() {
@@ -118,8 +113,4 @@ class TileSet {
         this.createTiles();
         this.shuffle();
     }
-}
-
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { Tile, TileSet, TileType, TileValue };
 }

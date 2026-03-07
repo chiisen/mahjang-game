@@ -3,46 +3,79 @@
 // 遊戲主邏輯：狀態管理、回合控制
 // ===========================================
 
-const GameState = {
-    INIT: 'init',
-    DEALING: 'dealing',
-    PLAYING: 'playing',
-    ROUND_END: 'round_end',
-    GAME_OVER: 'game_over'
-};
+console.log('[Game] 載入中...');
 
-const PlayerDirection = ['east', 'south', 'west', 'north'];
+/**
+ * 麻將遊戲模組
+ * @namespace MahjongGame
+ */
+const MahjongGame = (function() {
+    'use strict';
 
-const Logger = {
-    log: (msg, data) => console.log(`[麻將] ${msg}`, data || ''),
-    error: (msg, err) => console.error(`[麻將錯誤] ${msg}`, err),
-    warn: (msg, data) => console.warn(`[麻將警告] ${msg}`, data || ''),
-    info: (msg, data) => console.info(`[麻將資訊] ${msg}`, data || '')
-};
+    /** @constant {Object} 遊戲狀態列舉 */
+    const GameState = {
+        INIT: 'init',
+        DEALING: 'dealing',
+        PLAYING: 'playing',
+        ROUND_END: 'round_end',
+        GAME_OVER: 'game_over'
+    };
 
-class Game {
-    constructor() {
-        Logger.log('初始化遊戲...');
-        this.tileSet = null;
-        this.players = [];
-        this.currentPlayer = 0;
-        this.state = GameState.INIT;
-        this.dealer = 0;
-        this.consecutiveWins = 0;
-        this.lastDiscard = null;
-        this.lastDraw = null;
-        this.winner = null;
+    /** @constant {string[]} 玩家方位 */
+    const PlayerDirection = ['east', 'south', 'west', 'north'];
 
-        try {
-            this.initPlayers();
-            this.bindEvents();
-            Logger.log('遊戲初始化完成');
-        } catch (err) {
-            Logger.error('遊戲初始化失敗', err);
+    /** @constant {Object} 日誌工具 */
+    const Logger = {
+        log: (msg, data) => console.log(`[麻將] ${msg}`, data || ''),
+        error: (msg, err) => console.error(`[麻將錯誤] ${msg}`, err),
+        warn: (msg, data) => console.warn(`[麻將警告] ${msg}`, data || ''),
+        info: (msg, data) => console.info(`[麻將資訊] ${msg}`, data || '')
+    };
+
+    /**
+     * 遊戲主類別
+     * @class Game
+     */
+    class Game {
+        /**
+         * 建立遊戲實例
+         * @constructor
+         */
+        constructor() {
+            Logger.log('初始化遊戲...');
+            /** @type {TileSet} 牌組 */
+            this.tileSet = null;
+            /** @type {Player[]} 玩家陣列 */
+            this.players = [];
+            /** @type {number} 當前玩家索引 */
+            this.currentPlayer = 0;
+            /** @type {string} 遊戲狀態 */
+            this.state = GameState.INIT;
+            /** @type {number} 莊家索引 */
+            this.dealer = 0;
+            /** @type {number} 連莊數 */
+            this.consecutiveWins = 0;
+            /** @type {Tile} 最後打出的牌 */
+            this.lastDiscard = null;
+            /** @type {Tile} 最後摸到的牌 */
+            this.lastDraw = null;
+            /** @type {Player} 胡牌玩家 */
+            this.winner = null;
+
+            try {
+                this.initPlayers();
+                this.bindEvents();
+                Logger.log('遊戲初始化完成');
+            } catch (err) {
+                Logger.error('遊戲初始化失敗', err);
+            }
         }
-    }
 
-    initPlayers() {
+        /**
+         * 初始化玩家
+         * @method initPlayers
+         */
+        initPlayers() {
         this.players = [
             new Player(0, '東家 (你)', true),
             new AIPlayer(1, '南家'),
@@ -57,6 +90,10 @@ class Game {
         Logger.log('玩家初始化完成', { players: this.players.map(p => p.name) });
     }
 
+    /**
+     * 綁定 DOM 事件
+     * @method bindEvents
+     */
     bindEvents() {
         const newGameBtn = document.getElementById('btn-new-game');
         if (!newGameBtn) {
@@ -82,6 +119,10 @@ class Game {
         });
     }
 
+    /**
+     * 開始新遊戲
+     * @method startNewGame
+     */
     startNewGame() {
         Logger.log('========== 開始新遊戲 ==========');
 
@@ -136,6 +177,10 @@ class Game {
         });
     }
 
+    /**
+     * 開始回合
+     * @method playTurn
+     */
     playTurn() {
         const player = this.players[this.currentPlayer];
         Logger.log(`回合開始: ${player.name} (${PlayerDirection[this.currentPlayer]})`);
@@ -145,16 +190,37 @@ class Game {
             this.enableHumanActions();
         } else {
             Logger.log('AI 回合思考中...');
+            this.showLoading();
             setTimeout(() => {
                 try {
                     this.aiTurn(player);
                 } catch (err) {
                     Logger.error('AI 回合執行失敗', err);
+                    this.hideLoading();
                 }
             }, 500);
         }
     }
 
+    showLoading() {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.classList.remove('hidden');
+        }
+    }
+
+    hideLoading() {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.classList.add('hidden');
+        }
+    }
+
+    /**
+     * AI 回合處理
+     * @method aiTurn
+     * @param {Player} player - AI 玩家
+     */
     aiTurn(player) {
         let tile = this.lastDiscard;
 
@@ -171,14 +237,22 @@ class Game {
         }
 
         try {
-            const decision = player.decideAfterDraw(tile);
+            const decision = player.decideAfterDraw(tile, this);
             Logger.log(`AI 決策: ${decision.action}`, decision);
             this.executeAction(player, decision);
+            this.hideLoading();
         } catch (err) {
             Logger.error('AI 決策失敗', err);
+            this.hideLoading();
         }
     }
 
+    /**
+     * 執行玩家決策
+     * @method executeAction
+     * @param {Player} player - 玩家
+     * @param {Object} decision - 決策物件
+     */
     executeAction(player, decision) {
         const { action, tile } = decision;
         Logger.log(`執行動作: ${action}`, { player: player.name, tile: tile?.toString() });
@@ -244,6 +318,10 @@ class Game {
         Logger.log('========== 遊戲結束 ==========');
     }
 
+    /**
+     * 更新 UI
+     * @method updateUI
+     */
     updateUI() {
         try {
             const remaining = this.tileSet.remaining();
@@ -369,8 +447,17 @@ class Game {
         player.sortHand();
         this.updateUI();
 
-        const decision = player.decideAfterDraw(kongTile);
-        this.executeAction(player, decision);
+        this.showLoading();
+        setTimeout(() => {
+            try {
+                const decision = player.decideAfterDraw(kongTile, this);
+                this.executeAction(player, decision);
+            } catch (err) {
+                Logger.error('槓後決策失敗', err);
+            } finally {
+                this.hideLoading();
+            }
+        }, 300);
     }
 
     handleChow(player, tile) {
@@ -390,6 +477,14 @@ class Game {
 
     getPrevPlayer(playerId) {
         return this.players[(playerId + 3) % 4];
+    }
+
+    getAllDiscards() {
+        const allDiscards = [];
+        for (const player of this.players) {
+            allDiscards.push(...player.discards);
+        }
+        return allDiscards;
     }
 
     enableHumanActions() {
@@ -514,9 +609,17 @@ class Game {
         this.disableActions();
         this.playTurn();
     }
-}
 
-// ===========================================
-// Game Class Definition only
-// (Instantiation moved to app.js)
-// ===========================================
+    return { Game, GameState, PlayerDirection, Logger };
+})();
+
+const { Game, GameState, PlayerDirection, Logger } = MahjongGame;
+
+window.Game = Game;
+window.GameState = GameState;
+window.PlayerDirection = PlayerDirection;
+window.Logger = Logger;
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = MahjongGame;
+}

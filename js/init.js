@@ -4,6 +4,8 @@
  * ===========================================
  */
 
+console.log('[Init] 開始載入腳本...');
+
 // 全域錯誤處理
 window.onerror = function(msg, url, line, col, error) {
     console.error('[全域錯誤]', {

@@ -64,18 +64,31 @@ class Player {
     canChow(tile, fromPlayer) {
         if (this.id !== fromPlayer) return false;
         
-        const sorted = [...this.hand].sort((a, b) => a.value - b.value);
-        for (let i = 0; i < sorted.length - 1; i++) {
-            if (sorted[i].type !== tile.type) continue;
+        const handValues = this.hand
+            .filter(t => t.type === tile.type && t.type !== TileType.ZI && t.type !== TileType.HUA)
+            .map(t => t.value)
+            .sort((a, b) => a - b);
+
+        const target = tile.value;
+        
+        for (let i = 0; i < handValues.length - 1; i++) {
+            const v1 = handValues[i];
+            if (v1 >= target) continue;
             
-            const v1 = sorted[i].value;
-            const v2 = sorted[i + 1].value;
-            
-            if ((v1 + v2 + tile.value === v1 * 3 || v1 + v2 + tile.value === v2 * 3) &&
-                Math.abs(v1 - tile.value) <= 2 && Math.abs(v2 - tile.value) <= 2) {
-                return true;
+            for (let j = i + 1; j < handValues.length; j++) {
+                const v2 = handValues[j];
+                if (v2 >= target || v2 <= v1) continue;
+                
+                if ((v1 + v2 + target) % 3 === 0) {
+                    const diff1 = target - v1;
+                    const diff2 = target - v2;
+                    if (diff1 <= 2 && diff2 <= 2 && diff1 > 0 && diff2 > 0) {
+                        return true;
+                    }
+                }
             }
         }
+        
         return false;
     }
 
@@ -169,8 +182,4 @@ class Player {
         this.isReady = false;
         this.hasDrawn = false;
     }
-}
-
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { Player };
 }
